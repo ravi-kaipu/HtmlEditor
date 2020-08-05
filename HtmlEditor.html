@@ -1,0 +1,1662 @@
+<html>
+    <title>Drawing</title>
+    <head>
+        <script src='tidy.js'></script>
+
+        <script>
+            options = {
+                "indent":"auto",
+                "indent-spaces":2,
+                "wrap":80,
+                "markup":true,
+                "output-xml":false,
+                "numeric-entities":true,
+                "quote-marks":true,
+                "quote-nbsp":false,
+                "show-body-only":true,
+                "quote-ampersand":false,
+                "break-before-br":true,
+                "uppercase-tags":false,
+                "uppercase-attributes":false,
+                "drop-font-tags":true,
+                "tidy-mark":false
+            }
+
+            var shapeName;
+            var colors = ['#438a5e', '#bac964',  '#F7FBE1','#e5cfe5', '#cfe5cf', '#cff6cf', '#6a197d', '#ffa5b0', '#e0dede', '#f5f5f5', '#204051', '#3b6978', '#84a9ac', '#e7dfd5', '#17706e', '#fb7813', '#f7f7ee', '#b6eb7a', '#900c3f', '#fc9d9d', '#ffcac2', '#ccafaf', '#f4ebc1', '#a0c1b8', '#709fb0', '#726a95', '#e8ead3', '#fbd46d', '#ff9c71', '#654062', '#222831', '#393e46', '#32e0c4', '#eeeeee', '#10375c', '#127681', '#f3c623', '#f4f6ff', '#aacdbe', '#f4f7c5', '#fbc687', '#ea907a', '#000000', '#cf7500', '#f0a500', '#f4f4f4', '#07031a', '#4f8a8b', '#b1b493', '#ffcb74', '#bbf1c8', '#80bdab', '#342b38', '#ff9595', '#0a97b0', '#4cd3c2', '#f54291', '#faeee7', '#abc2e8', '#dbc6eb', '#d1eaa3', '#efee9d', '#35d0ba', '#ffcd3c', '#ff9234', '#d92027', '#fe8a71', '#f6cd61', '#3da4ab', '#0e9aa7', '#e84a5f', '#ff847c', '#feceab', '#99b898', '#fce8d5', '#ffd3e1', '#0a97b0', '#1b6ca8', '#ee91bc', '#efb960', '#edf492', '#a8df65', '#bb596b', '#f96d80', '#ff9a76', '#ffc4a3', '#679b9b', '#aacfcf', '#d291bc', '#ffcbcb', '#e5e5e5', '#f8b24f', '#ea9a96', '#303960', '#7c3c21', '#ec823a', '#f9c49a', '#e8e4e1', '#f17808', '#e71414', '#12947f', '#2fc4b2', '#e4e4e4', '#8ccbbe', '#3797a4', '#fcf876', '#d92027', '#f37121', '#f4ea8e', '#5fdde5', '#edf4f2', '#f5a31a', '#d32626', '#79d70f', '#562349', '#ad6989', '#ffa299', '#fee2b3', '#f1ebbb', '#b5076b', '#5c2a9d', '#45046a', '#f5a7a7', '#f9d89c', '#82c4c3', '#bc658d', '#fdcb9e', '#3f3f44', '#cceabb', '#f7f7f7', '#ee8572', '#d4f3ef', '#abf0e9', '#63b7af', '#007892', '#ff427f', '#fc8210', '#ffd8a6', '#def4f0', '#74d4c0', '#d9455f', '#9a1f40', '#ffdcb4', '#c060a1', '#6a097d', '#00005c', '#1abc9c','#2ecc71','#3498db','#9b59b6','#34495e',"#8e44ad","#2c3e50","#e67e22","#e74c3c","#95a5a6","#c0392b","#d35400","#f39c12","#bdc3c7","#7f8c8d","#eb4d4b","#130f40","#30336b","#f0932b","#22a6b3","#badc58","#6ab04c","#ff6348","#1e90ff","#c7ecee","#2ed573","#f1f2f6","#ff4757","#ff6b81","#ff7f50",'#16a085','#27ae60','#2980b9',"white", "black","red", "green","yellow", '#263646', '#eebb4d', '#d6efc7', '#96bb7c', '#184d47', '#9bdeac', '#f7f5dd', '#e2979c', '#e7305b', '#e36387', '#f2aaaa', '#a6dcef', '#ddf3f5', '#436f8a']
+            var properties = {"IMG":["width", "height", "image path", "padding", "border"], 
+                              "DIV":['width', 'height', 'border', 'content', 'padding', 'left', 'top', 'zindex', 'font-settings','text-properties'],
+                              "UL":["width", "height", "padding", "list-style-type", "border"],
+                              "TABLE":["width", "height", "border-collapse", "border-spacing", "border"]}
+
+            var created_ids = []
+            var backup_created_ids = []
+            var total_created_ids = 0;
+            var id_counter = 1;
+            var id_name = "rectangle";
+            var staticint = 1;
+            var property_window_opened = null;
+            var can_window_opened = true;
+            var selected_item = null;
+            var old_border = ""
+            var old_cursor = "default"
+            var selectable_item_details = {"parent":null, "border":""}
+            var copied_element = null;
+            var copied_element_old_border = ""
+
+            window.onbeforeunload = function(event) {
+                return alert("wow")
+            }
+            
+            function save_page() {
+                var data = canvas.contentDocument.body.innerHTML;
+                const fs = require('fs')   
+                fs.writeFile('output.txt', data, (err) => { 
+                    if (err) throw err; 
+                })
+            }
+
+            function save_element(elem){
+                if (created_ids.length !== backup_created_ids) {
+                    var fake = []
+                    for (var i = 0; i < created_ids.length; i++) {
+                        var el = backup_created_ids[i]
+                        fake.push([el[0], el[1]])
+                    }
+                    backup_created_ids = fake;
+                }
+                created_ids.push(elem)
+                /*
+                backup_created_ids = []
+                for (var i = 0; i < created_ids.length; i++){
+                    var elem = created_ids[i]
+                    backup_created_ids.push([elem, elem.parentNode?elem.parentNode:canvas.contentDocument.body])
+                }       
+                */    
+                backup_created_ids.push([elem, elem.parentNode?elem.parentNode:canvas.contentDocument.body])   
+            }
+            
+            function singletaggedelement(element){
+                var tags = ["IMG", "BR"]
+                var etag = element.tagName
+                var ind = tags.indexOf(etag)
+                if (ind > -1){
+                    return true
+                }
+                return false
+            }
+            function find_hyperlinks(){
+                var doc = canvas.contentDocument.body
+                var links = doc.querySelectorAll("a")
+                if (links){
+                    for (var i = 0; i < links.length; i++){
+                        var link = links[i]
+                        link.removeAttribute("href")
+                        link.removeAttribute("onclick")
+                        var ls = link.className
+                        if (ls && ls.search("myhyperlink") < -1)
+                            link.className = "myhyperlink "+ls
+                    }
+                }
+            }
+
+            function action_printer(message, type='info', subinfo=false){
+                var par = document.createElement("p");
+                /*if (type=="info")
+                    par.style.color = "#438A5E"*/
+                if (type == "action")
+                    par.style.color = "#4F8A8B"
+            
+                if (subinfo){
+                    par.innerHTML = "<span style='margin-left:10px'>"+message+"</span>"
+                    par.style.color = "#CCAFAC"
+                }
+                else
+                    par.innerHTML = "> "+message
+                actionbody.appendChild(par)
+                actionbody.scrollTop = actionbody.scrollHeight;
+
+            }
+            function rgbToHex(rgb) { 
+                var hex = Number(rgb).toString(16);
+                if (hex.length < 2) {
+                    hex = "0" + hex;
+                }
+                return hex;
+            }
+
+            function fullColorHex(r,g,b) {   
+                var red = rgbToHex(r);
+                var green = rgbToHex(g);
+                var blue = rgbToHex(b);
+                var color = red+green+blue;
+                return color.toUpperCase()
+            }
+
+            function removeElement(array, elem) {
+                var index = array.indexOf(elem);
+                if (index > -1) {
+                    array.splice(index, 1);
+                    backup_created_ids.splice(index, 1)
+                }
+            }
+
+            function unhighlight_all(ff) {
+                var childnodes = document.getElementById("boxes").getElementsByTagName("a")
+                for(var i = 0; i < childnodes.length; i++) {
+                    childnodes[i].style.background = "white"
+                }
+                ff.style.background = "orange"
+            }
+
+            function get_details(element) {
+                action_printer("Clicked object details are", "action")
+                var style =  getComputedStyle(element);
+                action_printer("ID: "+element.id, "info", true)
+                action_printer("position: "+style.position, "info", true)
+                action_printer("class: "+element.className, "info", true)
+            }
+
+            function add_css_property(element, attr, value){
+                if (!element || !value || element.className.search("has-properties")<0)
+                    return
+                switch(attr){
+                    case "width":
+                        element.style.width = value;
+                        break;
+                    case "height":
+                        element.style.height = value;
+                        break;
+                    case "border":
+                        element.style.border = value;
+                        old_border = value;
+                        break;
+                    case "padding":
+                        element.style.padding = value;
+                        break;
+                    case "left":
+                        element.style.left = value
+                        break;
+                    case "top":
+                        element.style.top = value
+                        break;
+                    case "zindex":
+                        element.style.zIndex = value;
+                        break;
+                    case "image path":
+                        element.src = value
+                        break
+                    case "content":
+                        element.innerHTML = value;
+                        break;
+                    case "font-size":
+                        element.style.fontSize = value;
+                        break;
+                    case "font-family":
+                        element.style.fontFamily = value;
+                        break;
+                    case "color":
+                        element.style.color = value;
+                        break;
+                    case "background-color":
+                        element.style.background = value;
+                        break;
+                }
+                action_printer("#"+element.id+": css property &quot"+ attr+"&quot has been created.", "action")                 
+
+            }
+
+            function read_css_property(element, attr){
+                if (!element)
+                    return ""
+                switch(attr){
+                    case "width":
+                        return element.style.width;
+                    case "height":
+                        return element.style.height;
+                    case "border":
+                        return element.style.border;
+                    case "padding":
+                        return element.style.padding
+                    case "left":
+                        return element.style.left
+                    case "top":
+                        return element.style.top
+                    case "zindex":
+                        return element.style.zIndex
+                    case "image path":
+                        return element.src
+                    case "content":
+                        return element.innerHTML
+                    case "font-size":
+                        return element.style.fontSize;
+                    case "font-family":
+                        return element.style.fontFamily;
+                    case "color":
+                        if (element.style.color){
+                            var va = element.style.color.match(/\d+/g)
+                            if (va)
+                                return '#'+fullColorHex(va[0], va[1], va[2])
+                            return element.style.color
+                        }
+                        return ""                    
+                    case "background-color":
+                        if (element.style.background){
+                            var va = element.style.background.match(/\d+/g)
+                            if (va)
+                                return '#'+fullColorHex(va[0], va[1], va[2]) 
+                            return element.style.background
+                        }
+                        return ""
+               }
+                return ""
+            }
+
+            function initRectangle(ff,canvas, status) {
+                canvas = canvas.contentDocument.body;
+                unhighlight_all(ff)
+                canvas.style.cursor = "crosshair"
+                function setMousePosition(e) {
+                    var ev = e || window.event; //Moz || IE
+                    if (ev.pageX) { //Moz
+                        mouse.x = ev.pageX + window.pageXOffset;
+                        mouse.y = ev.pageY + window.pageYOffset;
+                    } else if (ev.clientX) { //IE
+                        mouse.x = ev.clientX + document.body.scrollLeft;
+                        mouse.y = ev.clientY + document.body.scrollTop;
+                    }
+                };
+
+                var mouse = {
+                    x: 0,
+                    y: 0,
+                    startX: 0,
+                    startY: 0
+                };
+            
+                var element = null;
+
+                canvas.onmousemove = function (e) {
+
+                    setMousePosition(e);
+                    if (element !== null) {
+                        canvas.style.cursor = "crosshair";
+                        var pleft = 0
+                        var ptop = 0
+                        if (selected_item) {
+                        var p = getComputedStyle(selected_item)
+                            pleft = parseInt(p.left)
+                            ptop = parseInt(p.top)
+                        }
+                        element.style.width = Math.abs(mouse.x - mouse.startX) + 'px';
+                        element.style.height = Math.abs(mouse.y - mouse.startY) + 'px';
+                        element.style.left = (mouse.x - mouse.startX < 0) ? mouse.x + 'px' : (mouse.startX - pleft)+ 'px';
+                        element.style.top = (mouse.y - mouse.startY < 0) ? mouse.y + 'px' : (mouse.startY - ptop)+ 'px';
+                    }
+                }
+
+                canvas.onclick = function (e) {
+                    if (element !== null) {
+                        canvas.onmousemove = null;
+                        //make_draggable(element, 'rectangle')
+                        
+                        element.ondragstart = function() {  return false;};
+                        //element.style.zIndex = 1;   
+                        ff.style.background = "white"
+                        action_printer("div.#"+element.id+" has been created.")                 
+                        
+                        element = null;
+                        
+                        canvas.style.cursor = "default";
+                        console.log("rectangle finsihed.");
+                        canvas.onclick = null;
+
+                    } else if (status++ == 0){
+                        console.log("rectangle begun.");
+                        mouse.startX = mouse.x;
+                        mouse.startY = mouse.y;
+                        element = document.createElement('div');
+                        element.className = 'rectangle draggableitem stretchableitem has-properties add-elements selectableitem'
+                        element.style.background = colors[id_counter]
+                        element.setAttribute("id", id_name+id_counter++)    
+                        
+                        element.style.position = "absolute"
+                        if (selected_item &&  selected_item.className.search("add-elements")>=0) {
+                            var p = getComputedStyle(selected_item)
+                            var pleft = parseInt(p.left)
+                            var ptop = parseInt(p.top)
+                            var x = mouse.x
+                            var y = mouse.y
+
+                            if (x > pleft && y > ptop){
+                                element.style.left = (x-pleft)+'px'
+                                element.style.top = (y-ptop)+'px'
+                            }
+                            selected_item.appendChild(element)
+                        }
+                        else{
+                            element.style.left = mouse.x + 'px';
+                            element.style.top = mouse.y + 'px';
+                            canvas.appendChild(element)
+                        }
+                        save_element(element)
+                        canvas.style.cursor = "crosshair";
+                    }
+
+                }
+            }
+
+            
+        function initColorPicker(ff) {
+                unhighlight_all(ff)
+                if (selected_item)
+                    colorpicker("#"+selected_item.id, canvas.contentDocument.body)
+                else
+                    colorpicker()
+        }
+            
+        function goback() {
+                if (created_ids.length > 0) {
+                    var element = created_ids[created_ids.length - 1]
+                    var parent = backup_created_ids[created_ids.length-1][1]
+                    if (element == selected_item) {
+                        if (element.className.search("has-properties")>=0){
+                            if (property_window_opened){
+                                var parent = backup_created_ids[created_ids.length-1][1]
+                                parent.removeChild(property_window_opened)
+                                property_window_opened = null;
+                            }
+                        }
+                        selected_item.style.border = old_border
+                        selected_item = null;
+                    }
+
+                    action_printer("#"+element.id+" has been removed.", "action")
+                    try {
+                        parent.removeChild(element)
+                    }
+                    //element.parentNode.removeChild(element)
+                    catch (err) {
+                        
+                    }
+                    created_ids.pop()                    
+                }
+                else 
+                    alert("nothing to undo")
+        }
+
+        function restore_element(){
+            if (backup_created_ids.length > 0 && backup_created_ids.length > created_ids.length){
+                var rel = backup_created_ids[created_ids.length]
+                var elem = rel[0]
+                var parent = rel[1]
+                parent.appendChild(elem)
+                created_ids.push(elem)
+                action_printer("#"+elem.id+" has been restored")
+            }
+        }
+
+        
+            
+        
+
+        function find_selectable_element(child, pname="selectableitem"){
+            var node = child;
+            while (node != null) {
+                var tag = node.tagName;
+                if (tag == "INPUT" || tag == "TEXTAREA" || tag == "SELECT")
+                    return child;
+                if (node.className && node.className.search(pname) >= 0) {
+                    return node;
+                }
+                node = node.parentNode;
+            }
+            if (child.className == "resizer")
+                return null
+            return child
+        }
+
+        function add_windows(container){
+            var script = document.createElement("script")
+            script.type = "text/javascript"
+            script.src = "iframe_javascript.js"
+            container.appendChild(script)
+
+            var cssLink = document.createElement("link");
+            cssLink.href = "iframe_css.css"; 
+            cssLink.rel = "stylesheet"; 
+            cssLink.type = "text/css"; 
+
+            container.appendChild(cssLink);
+
+            var divids = ["codepaster", "csscodepaster"]
+            var baseids = ["codebase", "csscodebase"]
+            for(var i = 0; i < 2; i++){
+                var divid = divids[i]
+                var baseid = baseids[i]
+                var div = document.createElement("div")
+                div.setAttribute("id", divid)
+                div.className = "draggableitem selectableitem stretchableitem intactwindow";
+                var props = "visibility:hidden;z-index:100;cursor:all-scroll;background-color:#CFE5CF;position:fixed;border:2px solid grey;height:350px; width:650px; padding:3px 0px;font-family:calibri"
+                div.setAttribute("style", props)
+                var span = document.createElement("span")
+                span.setAttribute("style", "padding:10px 10px;font-size:15px;font-weight:bold")
+                span.innerHTML = "Add html code here.."
+                if (i == 1){
+                    span.innerHTML = "Add CSS code here.."
+                }
+
+                var cl = document.createElement("div")
+                cl.setAttribute("style", "float:right;padding:5px 12px;margin-top: -4px;font-weight:bold;font-size:15px;cursor: hand;")
+                cl.innerHTML = "x"
+                cl.onclick = function() {
+                    this.parentNode.style.visibility = "hidden"
+                }
+                var p = "cursor:default;width:100%;height:85%;margin-top: 4px;font-family: monospace;font-size:14px"
+
+                var textarea = document.createElement("textarea")
+                textarea.setAttribute("id", baseid)
+                textarea.setAttribute("style", p)
+                div.appendChild(span)
+                div.appendChild(cl)
+                div.appendChild(textarea)
+
+                var submit = document.createElement("div")
+                submit.setAttribute("style", "padding:5px 10px; border:1px solid grey; cursor:hand; width:60px;font-size:12px;left:40%;position: relative; background-color: #ccc;")
+                submit.innerHTML = "Add Code"
+                if (i == 0){
+                    submit.setAttribute("onclick", "add_code()")
+                }
+                else{
+                    submit.setAttribute("onclick", "add_css_code()")
+                }
+                div.appendChild(submit)
+                container.appendChild(div)
+            }            
+        }
+
+        function move_element(container_name="#canvas") {
+            var container = document.querySelector(container_name).contentDocument.body;
+            add_windows(container)
+
+            var activeItem = null;
+
+            var active = false;
+
+            selected_item = null;
+
+            container.addEventListener("click", select_element, false);
+            container.addEventListener("mousedown", dragStart, false);
+            container.addEventListener("mouseup", dragEnd, false);
+            container.addEventListener("mousemove", drag, false);
+
+            function remove_properties(element) {
+                var props = [element]
+                if (selected_item !== element)
+                    props = [selected_item, element]
+                for (var i = 0; i < props.length; i++){
+                    element = props[i]
+                    if (!element)
+                        continue
+                   // if (element.className.search("stretchableitem")>=0) {
+                        var resizer = element.querySelector(".resizer")
+                        if (resizer) {
+                            resizer.removeEventListener("mousedown", stretch_element)
+                            action_printer("resizer has been removed from #"+resizer.parentNode.id, "action")
+                            resizer.parentNode.removeChild(resizer)
+                        }
+
+                        var measure = element.querySelector(".measurements")
+                        if (measure){
+                            measure.parentNode.removeChild(measure)
+                        }
+                    //}
+                }
+            }
+
+            function add_properties(element){          
+                remove_properties(element)
+
+                if (element.className.search("stretchableitem")>=0 && (!singletaggedelement(element))){                      
+                    var resizer = document.createElement('div');
+                    resizer.className = 'resizer';
+                    resizer.setAttribute("id", "resizer_"+id_counter++)
+                        //resizer.style.zIndex = 11;
+                    var elementid = element.id;
+                    resizer.style.width =  "10px";
+                    resizer.style.height = "10px";
+                    resizer.style.background =  "#FFA5B0";
+                    resizer.style.position = "absolute";
+                    resizer.style.right = 0;
+                    resizer.style.bottom = 0;
+                    resizer.style.cursor = "se-resize"
+                    resizer.style.zIndex = 100
+                    resizer.style.padding = 0
+                    resizer.onmousedown = function(e) {
+                        container.removeEventListener("mousedown", dragStart, false);
+                        container.removeEventListener("mouseup", dragEnd, false);
+                        container.removeEventListener("mousemove", drag, false);
+                        stretch_element(e, find_selectable_element(this, "stretchableitem"));
+                
+                    }
+                    action_printer("resizer has been added to #"+element.id)
+                    element.appendChild(resizer);
+                }
+
+                var measure = document.createElement("div")
+
+                var measurement = getComputedStyle(element)
+                measure.innerHTML = parseInt(measurement.width) + "px X " + parseInt(measurement.height)+"px"
+                measure.style.position = "absolute"
+                measure.className = "measurements"
+                var bheight = parseInt(getComputedStyle(element).borderWidth);
+                var bh = bheight?-bheight-2:-2;
+                measure.style.top = bh - 20 + 'px'
+                measure.style.right = -30 + "px";
+                measure.style.padding = "3px 5px"
+                measure.style.display = "inline-block"
+                measure.style.width = "70px"
+                measure.style.textAlign = "center"
+                measure.style.border = "0.5px dashed purple"
+                measure.style.background = "#ddf"
+                measure.style.color = "black"
+                measure.style.fontSize = "11px"
+                measure.style.fontFamily = "calibri"
+                element.appendChild(measure)
+            }
+
+            function stretch_element(e, elem) {         
+                if (elem == null)
+                    return
+                var element = elem;
+                var startX, startY, startWidth, startHeight;
+                var measure = element.querySelector(".measurements")
+
+                function initDrag(e) {
+                    //action_printer("#"+element.id+" stretch initiated", "info")    
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
+                    startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
+                    container.addEventListener('mousemove', doDrag, false);
+                    container.addEventListener('mouseup', stopDrag, false);
+                    
+                }
+
+                function doDrag(e) {
+                    if ((startWidth + e.clientX - startX)> 30 && (startHeight + e.clientY - startY) > 20){
+                        element.style.width = (startWidth + e.clientX - startX) + 'px';
+                        element.style.height = (startHeight + e.clientY - startY) + 'px';
+                        if (measure){
+                            measure.innerHTML = parseInt(element.style.width) + "px X " + parseInt(element.style.height)+"px"
+                        }
+                    }
+                    can_window_opened = false;
+                }
+
+                function stopDrag(e) {
+                    //action_printer("#"+element.id+" stretch initiated", "info")    
+                    container.removeEventListener('mousemove', doDrag, false);
+                    container.removeEventListener('mouseup', stopDrag, false);
+                    container.addEventListener("mousedown", dragStart, false);
+                    container.addEventListener("mouseup", dragEnd, false);
+                    container.addEventListener("mousemove", drag, false);
+                }
+                initDrag(e)
+            }
+
+            function delete_element(e) {
+                if (selected_item && selected_item.className.search("selectableitem")>=0 && e.keyCode == 32 && e.shiftKey){
+
+                    var m = selected_item.getBoundingClientRect()
+                    var position = ["100px", "100px"] 
+                
+                    if (can_window_opened && selected_item.className.search("has-properties")>=0){
+                        var res = properties.hasOwnProperty(selected_item.nodeName.toUpperCase())
+                        var div_properties = ["width", "height", "content"]
+                        if (res)
+                            div_properties = properties[selected_item.nodeName.toUpperCase()]
+                        add_properties_window(selected_item, div_properties, position)
+                    }
+                }
+                else if (selected_item && selected_item.className.search("selectableitem")>=0 && e.keyCode == 13 && e.shiftKey){
+                    var codebase = canvas.contentDocument.getElementById("codebase")
+                    if (codebase) {
+                        remove_properties(selected_item)
+                        codebase.value = tidy_html5(selected_item.outerHTML, options)
+                        codebase.parentNode.style.visibility = "visible"
+                    }
+                }
+
+                else if (selected_item && selected_item.className.search("selectableitem")>=0 && e.keyCode == 46 && e.shiftKey){
+                    removeElement(created_ids, selected_item)
+                    if (selected_item.className.search("intactwindow")<0) {
+                        action_printer("#"+selected_item.id+" has been removed permanently", "action")
+                        selected_item.parentNode.removeChild(selected_item)
+                        selected_item = null;
+                    
+
+                        //container.removeEventListener("keydown", delete_element)
+                        if (property_window_opened){
+                            removeElement(created_ids, property_window_opened)
+                            container.removeChild(property_window_opened)
+                            property_window_opened = null;
+                        }
+                    }
+                }
+
+
+                else if (e.keyCode == 90 && e.ctrlKey) {
+                    goback()
+                }
+
+                else if (e.keyCode == 89 && e.ctrlKey){
+                    restore_element()
+                }
+
+                else if (selected_item && e.keyCode == 67 && e.ctrlKey){
+                    copy_element(selected_item)
+                }
+                else if (selected_item && e.keyCode == 88 && e.ctrlKey) {
+                    cut_element(selected_item)
+                }
+
+                else if (e.keyCode == 86 && e.ctrlKey){
+                    if (copied_element) {
+                        if (selected_item && selected_item.className.search("add-elements")>=0)
+                            paste_element(selected_item)
+                        else
+                            paste_element(canvas.contentDocument.body)
+                    }
+                }
+            }
+
+            function select_element(e) {
+                if (!can_window_opened){
+                    // element just moved, so ignore it..
+                    can_window_opened = true;
+                    return
+                }
+
+                var pelem = e.target;
+                if (e.target !== e.currentTarget){
+                    pelem = find_selectable_element(e.target)
+                }
+
+                
+                
+                if (e.target !== e.currentTarget && pelem.className.search("selectableitem")>=0) {
+                    add_properties(pelem)
+                    if (selected_item) {
+                        if (selected_item == pelem && property_window_opened)
+                            return
+                        selected_item.style.removeProperty("border")
+                        container.removeEventListener("keydown", delete_element)
+//                      selectable_item_details["parent"].removeChild(selected_item)
+//                      selectable_item_details["parent"].appendChild(selected_item)
+                        selected_item.style.border = old_border
+                        remove_properties(selected_item)
+                        if (property_window_opened){
+                            removeElement(created_ids, property_window_opened)
+                            container.removeChild(property_window_opened)
+                            property_window_opened  = null;
+                        }
+                    }
+                    container.addEventListener("keydown", delete_element)
+                    selected_item = pelem;
+                    selectable_item_details["parent"] = pelem.parentNode;
+                    selectable_item_details["border"] = pelem.style.border;
+        
+                    old_border = selected_item.style.border
+                    var bw = selected_item.style.borderWidth;
+                    if (!bw)
+                        bw = "1px"
+                    selected_item.style.border =  bw+" dashed orange"
+                    //selected_item.style.boxShadow =  "0 0 0 5px rgba(0, 0, 0, .1)"
+
+                    get_details(selected_item)
+
+                  
+                    //if (pelem.className.search("stretchableitem")>=0)  
+                    add_properties(pelem)
+                    
+                    
+                    var m = selected_item.getBoundingClientRect()
+                    var position = [m.left, m.top] 
+                
+                   /*                   
+                    if (can_window_opened && selected_item.className.search("has-properties")>=0){
+                        console.log("opening property window")
+                        var res = properties.hasOwnProperty(selected_item.nodeName.toUpperCase())
+                        var div_properties = ["width", "height", "content"]
+                        if (res)
+                            div_properties = properties[selected_item.nodeName.toUpperCase()]
+                        add_properties_window(selected_item, div_properties, position)
+                    }
+                    */
+                }
+                else {
+                    if (e.target == e.currentTarget){
+                        if (property_window_opened){
+                            removeElement(created_ids, property_window_opened)
+                            document.getElementById("canvas").contentDocument.body.removeChild(property_window_opened)
+                            property_window_opened = null;
+                            action_printer("Settings window is closed.")
+                        }
+                        
+                        if (selected_item) {
+                            container.removeEventListener("keydown", delete_element)
+                            selected_item.style.border = old_border
+                            remove_properties(selected_item)
+                            selected_item = null;
+                        }
+                        else 
+                            remove_properties(pelem)
+
+                        container.addEventListener("keydown", delete_element, false)
+                        //document.getElementById("details").style.visibility = "hidden"
+                    }
+                }
+            }
+
+            function dragStart(e) {
+                var pelem = e.target;
+                if (e.target !== e.currentTarget)
+                    pelem = find_selectable_element(e.target, "draggableitem")
+                if (e.target !== e.currentTarget && pelem.className.search("draggableitem")>=0) {
+                    old_cursor = pelem.style.cursor
+                    pelem.style.cursor = "grab"
+                    //action_printer("#"+pelem.id+" drag is initiated", "info")
+                    active = true;
+
+                    // this is the item we are interacting with
+                    activeItem = pelem;
+
+                    if (activeItem !== null) {
+                        if (!activeItem.xOffset) {
+                            activeItem.xOffset = 0;
+                        }
+
+                        if (!activeItem.yOffset) {
+                            activeItem.yOffset = 0;
+                        }
+
+            
+                        activeItem.initialX = e.clientX - activeItem.xOffset;
+                        activeItem.initialY = e.clientY - activeItem.yOffset;
+                    }
+                }
+            }
+
+            function dragEnd(e) {
+                if (activeItem !== null) {
+                    //action_printer("#"+activeItem.id+" drag is completed", "info")
+                    activeItem.initialX = activeItem.currentX;
+                    activeItem.initialY = activeItem.currentY;
+
+                    var st = getComputedStyle(activeItem);
+                    var left1 = parseInt(st.left)
+                    var top1 = parseInt(st.top)
+                    var left = left1?left1:0
+                    var top = top1?top1:0   
+                    activeItem.style.cursor = old_cursor
+                    old_cursor = "default"
+                    //activeItem.style.removeProperty("transform")
+                    //activeItem.style.left = left + activeItem.initialX
+                    //activeItem.style.top = top + activeItem.initialY
+                    activeItem.style.position = st.position
+
+                    activeItem.currentX = 0
+                    activeItem.currentY = 0
+                    activeItem.xOffset = 0
+                    activeItem.yOffset = 0
+                }
+
+                active = false;
+                activeItem = null;
+            }
+
+            function drag(e) {
+                if (active) {
+                    activeItem.currentX = e.clientX - activeItem.initialX;
+                    activeItem.currentY = e.clientY - activeItem.initialY;
+                
+
+                    activeItem.xOffset = activeItem.currentX;
+                    activeItem.yOffset = activeItem.currentY;
+
+                    can_window_opened = false;  
+                    activeItem.style.cursor = "grabbing"
+                    var st = getComputedStyle(activeItem)
+                    //setTranslate(activeItem.currentX, activeItem.currentY, activeItem);
+                    var left  = parseInt(st.left)
+                    var top = parseInt(st.top)
+                    var bottom = parseInt(st.bottom)
+                    var height = parseInt(st.height)
+                    var width = parseInt(st.width)
+                    var borderheight = 1;
+                    var parent = getComputedStyle(activeItem.parentNode)
+                    var pheight = parseInt(parent.height)
+                    var pwidth = parseInt(parent.width)
+                    /*
+                    if ((top+activeItem.yOffset+height+2*borderheight) >= pheight){
+                        activeItem.parentNode.style.height = (pheight + 1 + height+ 2*borderheight) + 'px'
+                    }
+
+                    if ((left+activeItem.xOffset+width+2*borderheight) >= pwidth) {
+                        activeItem.parentNode.style.width = (pwidth + 1 + width + 2*borderheight) + 'px'
+                    }*/
+                    //if (left+activeItem.xOffset > -1)
+                        activeItem.style.left = left + activeItem.xOffset + "px"
+                    //if ((top+activeItem.yOffset> -1)) 
+                        activeItem.style.top = top + activeItem.yOffset + "px"
+                    
+                    
+                    activeItem.initialX = e.clientX
+                    activeItem.initialY = e.clientY
+                    
+                }
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
+        }
+
+        function copy_element(element) {
+            copied_element = element.cloneNode(true)
+            copied_element_old_border = old_border
+            action_printer("#"+copied_element.id+" is successfully copied")
+        }   
+
+        function cut_element(element) {
+            copied_element = element
+            copied_element_old_border = old_border
+            action_printer("#"+copied_element.id+" is successfully cut")
+        }
+
+        function paste_element(target) {
+            if (target == copied_element)
+                return 
+            if (target !== canvas.contentDocument.body) {
+                copied_element.style.left = "5px"
+                copied_element.style.top = "5px"
+            }
+            target.appendChild(copied_element)
+            save_element(copied_element)
+            action_printer("#"+copied_element.id+" is successfully pasted")
+            copied_element.style.border = copied_element_old_border
+            var givenid = copied_element.id
+            if (givenid){
+                copied_element.setAttribute("id", givenid+id_counter++)
+            }
+            
+            var childs = copied_element.childNodes
+            for (var i = 0; i < childs.length; i++){
+                var gid = childs[i].id
+                if (gid) {
+                    childs[i].setAttribute("id", gid+id_counter++)
+                }
+            }
+
+            copied_element = null
+            copied_element_old_border = ""
+
+        }
+
+        function select_box(properties) {
+            if (properties.length == 0)
+                return null;
+            var select = document.createElement("select")
+            select.className = "attribute_value"    
+            var op = document.createElement("option")
+            op.innerHTML = "Select option"
+            select.appendChild(op)        
+            for (var i = 0; i < properties.length; i++) {
+                var option = document.createElement("option")
+                option.setAttribute("value", properties[i].toLowerCase())
+                option.innerHTML = properties[i]
+                select.appendChild(option)
+            }
+            return select
+        }
+        
+        function add_properties_window(element, properties, position=["95%", "13%"]){
+            if (!property_window_opened) {
+                action_printer("Settings window opened with position "+position, "info")
+                var maindiv = document.createElement("div")
+                maindiv.className = "window draggableitem"
+                maindiv.setAttribute("id", "window"+id_counter++)
+                maindiv.innerHTML = "<b>&nbsp;Properties</b>"
+                maindiv.style.zIndex = 100;
+                maindiv.style.boxShadow = "3px 3px 5px 6px #ddf"
+                maindiv.style.left = position[0]
+                maindiv.style.top = position[1]
+
+                var closebtn = document.createElement("div")
+                closebtn.className = "closebutton"
+                closebtn.style.float = "right"
+                closebtn.style.padding = "0px 12px"
+                closebtn.style.fontSize = "20px"
+                closebtn.style.marginTop = "-5px"
+                closebtn.innerHTML = "X"
+                closebtn.style.fontWeight = "bold"
+                closebtn.style.cursor = "hand"
+                closebtn.onclick = function(){
+                    removeElement(created_ids, maindiv)
+                    document.getElementById("canvas").contentDocument.body.removeChild(maindiv)
+                    property_window_opened = null;
+                }
+                maindiv.appendChild(closebtn)
+                var body = document.createElement("div")
+                body.className = "windowbody"
+
+                var tbl = document.createElement("table")
+                tbl.className = "windowtable"
+                var tbody = document.createElement("tbody")
+                for(var i = 0; i<properties.length; i++){
+                    var attr = properties[i];
+
+                    if (attr == "text-properties")
+                        continue
+                    else if (attr == "font-settings")
+                        continue
+                    
+                    else if (attr == "content") {
+                       /* var childs = element.children
+                        alert(childs.length)
+                        var wecancontinue = true
+                        var count = 0;
+                        for (var x = 0; x < childs.length; x++){
+                            var cls = childs[x].className
+                            if (cls && cls.search("resizer") >= 0)
+                                continue
+                            else if (cls && cls.search("measuremets") >= 0)
+                                continue
+                            if (count == 0) {
+                                wecancontinue = false
+                            }
+                            else 
+                                wecancontinue = true
+                            count += 1
+                        }
+                        if (wecancontinue)*/
+                            continue
+                    }
+                    var  row = document.createElement("tr")
+                    var td1 = document.createElement("td")
+                    td1.innerHTML = attr;
+                    td1.style.width = "100px"
+                    td1.style.fontWeight = "bold"
+                    td1.style.margin = 0;
+                    td1.style.padding = 0;
+                    td1.style.textTransform = "capitalize"
+                    var td2 = document.createElement("td")
+                    td2.style.width = "300px"
+                    if (attr == "width1") {
+                        var x = ["abc"]
+                        var select = select_box(x)
+                        if (select){
+                            td2.appendChild(select)
+                            select.style.width = "100%"
+                        }
+                    }
+                    else {
+                    var input = document.createElement("input")
+                    input.className = "attribute_value"
+                    input.value = read_css_property(element, attr)
+            
+                    input.style.width = "100%"
+                    input.style.margin = 0
+                    input.style.padding = 0
+                    if (!input.value)
+                        input.placeholder = "not yet set"
+                    td2.appendChild(input)
+                    }
+                    var td3 = document.createElement("td")
+                    var btn = document.createElement("button")
+                    btn.innerHTML = "<b>&#10003;</b>"
+                    btn.style.cursor = "hand"
+                    btn.style.border = "1px solid grey"
+                    btn.style.display = "inline-block"
+                    btn.style.background = "#F5F5F5"
+                    btn.style.width = "30px"
+                    btn.style.height = "22px"
+                    btn.style.textAlign = "center"
+                    btn.style.color = "black"
+                    btn.style.padding = 0;
+                    btn.style.margin = 0;
+                    btn.onmousedown = function() {
+                        add_css_property(selected_item, this.parentNode.parentNode.querySelector("td").innerHTML, this.parentNode.parentNode.querySelector(".attribute_value").value)
+                    }
+                    td3.appendChild(btn)
+                    row.appendChild(td1)
+                    row.appendChild(td2)
+                    row.appendChild(td3)
+                    tbody.appendChild(row)
+                }
+
+                tbl.appendChild(tbody)
+                body.appendChild(tbl)
+
+                var fontsettings = document.createElement("div")
+                fontsettings.style.padding = "5px 0px"
+                fontsettings.style.marginTop = "2px"
+                
+                var header = document.createElement("div")
+                header.innerHTML = "Font Settings"
+                header.style.fontFamily = "monospace"
+                header.style.fontSize = "13px"
+                header.style.padding = "5px 0px"
+                header.style.fontWeight = "bold"
+                header.style.color = "navy"
+                fontsettings.appendChild(header)
+
+                var props = ["font-size", "font-family", "color", "background-color"]
+
+                var tbl2 = document.createElement("table")
+                var tb2 = document.createElement("tbody")
+                tbl2.className = "windowtable"
+
+                for (var j = 0; j < props.length; j++){
+                    var attr = props[j];
+                    var  row = document.createElement("tr")
+                    var td1 = document.createElement("td")
+                    td1.innerHTML = attr;
+                    td1.style.width = "90px"
+                    td1.style.fontWeight = "bold"
+                    td1.style.margin = 0;
+                    td1.style.padding = 0;
+                    var td2 = document.createElement("td")
+                    var input = document.createElement("input")
+                    input.value = read_css_property(element, attr)
+                    if (!input.value)
+                        input.placeholder = "not yet set"
+                    td2.style.width = "300px"
+                    input.style.width = "100%"
+                    td2.appendChild(input)
+                    var td3 = document.createElement("td")
+                    var btn = document.createElement("button")
+                    btn.innerHTML = "<b>&#10003;</b>"
+                    btn.style.cursor = "hand"
+                    btn.style.border = "1px solid grey"
+                    btn.style.display = "inline-block"
+                    btn.style.background = "#F5F5F5"
+                    btn.style.width = "30px"
+                    btn.style.height = "22px"
+                    btn.style.textAlign = "center"
+                    btn.style.color = "black"
+                    btn.style.padding = 0;
+                    btn.style.margin = 0;
+                    btn.onmousedown = function() {
+                        add_css_property(selected_item, this.parentNode.parentNode.querySelector("td").innerHTML, this.parentNode.parentNode.querySelector("input").value)
+                    }
+                    td3.appendChild(btn)
+                    row.appendChild(td1)
+                    row.appendChild(td2)
+                    row.appendChild(td3)
+                    tb2.appendChild(row)
+                }
+                tbl2.appendChild(tb2)
+                
+                fontsettings.appendChild(tbl2)
+                body.appendChild(fontsettings)
+                //action_printer("fontsettings has been added", 'info')
+
+                var textprops = document.createElement("div")
+                textprops.style.padding = "5px 2px"
+                textprops.style.marginTop = "2px"
+                
+                var header1 = document.createElement("div")
+                header1.innerHTML = "Text properties"
+                header1.style.fontFamily = "monospace"
+                header1.style.fontSize = "13px"
+                header1.style.padding = "0px 0px"
+                header1.style.fontWeight = "bold"
+                header1.style.color = "navy"
+                textprops.appendChild(header1)
+
+                var props1 = ["bold", "italic", "underline", 'capitalize', 'lowercase', 'uppercase', 'text-align-left', 'text-align-center', 'text-align-right', 'text-align-justify']
+
+                var tbl3 = document.createElement("table")
+                var tb3 = document.createElement("tbody")
+                var  row = document.createElement("tr")
+                var td1 = document.createElement("td")
+                for (var j = 0; j < props1.length; j++){
+                    var attr = props1[j];
+                    
+                    var btn = document.createElement("div")
+                    btn.style.float = "left"
+                    btn.style.padding = "5px 10px"
+                    btn.style.border = "1px solid grey"
+                    btn.style.marginRight = "5px"
+                    btn.style.marginTop = "3px"
+                    switch(attr){
+                        case "bold":
+                            btn.innerHTML = "<b>B</b>"
+                            btn.addEventListener('click', function() {
+                                if (!selected_item.style.fontWeight)
+                                    selected_item.style.fontWeight = "bold"
+                                else 
+                                    selected_item.style.removeProperty("font-weight")
+                            })
+                            break;
+                        case "italic":
+                            btn.innerHTML = "<i>I</i>"
+                            btn.addEventListener('click', function() {
+                                if (!selected_item.style.fontStyle)
+                                    selected_item.style.fontStyle = "italic"
+                                else 
+                                    selected_item.style.removeProperty("font-style") 
+                                })
+                            break;
+                        case "underline":
+                            btn.innerHTML = "<u>U</u>"
+                            btn.addEventListener('click', function() {
+                                if (!selected_item.style.textDecoration)
+                                    selected_item.style.textDecoration = "underline"
+                                else 
+                                    selected_item.style.removeProperty("text-decoration")
+                                })
+                            break;
+                        case "text-align-left":
+                            btn.innerHTML = "L"
+                            btn.addEventListener('click', function() {selected_item.style.textAlign = "left"})
+                            break;
+                        case "text-align-right":
+                            btn.innerHTML = "R"
+                            btn.addEventListener('click', function() {selected_item.style.textAlign = "right";})
+                            break;
+                        case "text-align-center":
+                            btn.addEventListener('click', function() {selected_item.style.textAlign = "center"})
+                            btn.innerHTML = "C"
+                            break;
+                        case "text-align-justify":
+                            btn.addEventListener('click', function() {selected_item.style.textAlign = "justify"})
+                            btn.innerHTML = "J"
+                            break;
+                        case "lowercase":
+                            btn.addEventListener('click', function() {selected_item.style.textTransform = "lowercase"})
+                            btn.innerHTML = "a"
+                            break;
+                        case "uppercase":
+                            btn.addEventListener('click', function() {selected_item.style.textTransform = "uppercase"})
+                            btn.innerHTML = "A"
+                            break;
+                        case "capitalize":
+                            btn.addEventListener('click', function() {selected_item.style.textTransform = "capitalize"})
+                            btn.innerHTML = "Aa"
+                            break;
+                    }
+                    btn.style.cursor = "hand"
+                    btn.style.background = "#F5F5F5"
+                    btn.style.textAlign = "center"
+                    btn.style.color = "black"
+                    btn.className = "textproperty"
+                    td1.appendChild(btn)
+            
+                }
+                row.appendChild(td1)
+                tb3.appendChild(row)
+                tbl3.appendChild(tb3)
+                
+                textprops.appendChild(tbl3)
+                body.appendChild(textprops)
+                //action_printer("text properties has been added", 'info')
+
+                if (!singletaggedelement(element)) {
+                var settings = document.createElement("div")
+                settings.style.padding = "5px 2px"
+                settings.style.marginTop = "0px"
+                
+                var header = document.createElement("div")
+                header.innerHTML = "Settings"
+                header.style.fontFamily = "monospace"
+                header.style.fontSize = "13px"
+                header.style.padding = "5px 0px"
+                header.style.fontWeight = "bold"
+                header.style.color = "navy"
+                settings.appendChild(header)
+
+                var props = ["draggable", "strechable", "add elements"]
+
+                var tbl4 = document.createElement("table")
+                var tb4 = document.createElement("tbody")
+                for (var j = 0; j < props.length; j++){
+                    var attr = props[j];
+                    var  row = document.createElement("tr")
+                    var td1 = document.createElement("td")
+                    td1.innerHTML = attr;
+                    td1.width = "200px"
+                    td1.style.padding = "2px 4px"
+                    td1.style.fontWeight = "bold"
+                    td1.style.textTransform = "capitalize"
+                    var td2 = document.createElement("td")
+                    var label = document.createElement("label")
+                    label.className = "switch"
+
+                    var input = document.createElement("INPUT")
+                    input.setAttribute("type", "checkbox")
+                    input.value = attr;
+                    var cls = ""
+                    switch (input.value) {
+                                case "draggable":
+                                    cls = "draggableitem"
+                                    break;
+                                case "strechable":
+                                    cls = "stretchableitem"
+                                    break;
+                                case "selectable":
+                                    cls = "selectableitem"
+                                    break;
+                                case "add elements":
+                                    cls = "add-elements"
+                                    break;
+                    }
+
+                    var output = false;
+                    if (cls){
+                        var res = selected_item.className.search(cls)
+                        if (res > -1)
+                            output = true;
+                        else
+                            output = false;
+                    }
+                    else 
+                        output = false;
+                    input.checked = output;
+
+                    input.onclick = function() {
+                        var cls = ""
+                        switch (this.value) {
+                                case "draggable":
+                                    cls = "draggableitem"
+                                    break;
+                                case "strechable":
+                                    cls = "stretchableitem"
+                                    break;
+                                case "selectable":
+                                    cls = "selectableitem"
+                                    break;
+                                case "add elements":
+                                    cls = "add-elements"
+                                    break;
+                        }
+                        var res = selected_item.className.search(cls)
+                        if (this.checked){
+                            if (res > -1){
+                                return 
+                            }
+                            action_printer(cls+" property has been added to #"+selected_item.id, "action")
+                            selected_item.className = selected_item.className + " "+cls
+                        }
+                        else {
+                            if (res < 0){
+                                return
+                            }
+                            //remove_properties(selected_item)
+                            action_printer(cls+" property has been removed from #"+selected_item.id, "action")
+
+                            selected_item.className = selected_item.className.replace(cls, '')
+                        }                       
+                    }
+
+                    label.appendChild(input)
+
+                    var span = document.createElement("SPAN")
+                    span.className = "slider round"
+                    label.appendChild(span)
+                    
+                    td2.appendChild(label)                  
+                    row.appendChild(td1)
+                    row.appendChild(td2)
+                    tb4.appendChild(row)
+                }
+                tbl4.appendChild(tb4)
+                
+                settings.appendChild(tbl4)
+                body.appendChild(settings)
+                }
+                //action_printer("Settings has been added", 'info')
+
+
+                maindiv.appendChild(body)
+                //save_element(maindiv)
+
+                canvas.contentDocument.body.appendChild(maindiv)
+                property_window_opened = maindiv;
+            }
+        }
+
+        function preview_page(){
+            var html = canvas.contentDocument.body.innerHTML
+            var popup = window.open("",'popUpWindow','height=500,width=500,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes');
+            if (popup.document)
+                popup.document.body.innerHTML = html;
+        }
+
+        function create_button(){
+            console.log("button has been created")
+            var div = document.createElement("div")
+            div.innerHTML = "Button"+id_counter;
+            div.className = "button draggableitem has-properties selectableitem";
+            div.style.border = "1px solid green";
+            div.style.padding = "5px 10px";
+            div.style.cursor = "hand"
+            div.setAttribute("id", "button"+id_counter++)            
+            if (selected_item && selected_item.className.search("add-elements")>0){
+                selected_item.appendChild(div)
+                save_element(div)
+            }
+            else{
+                document.getElementById('canvas').contentDocument.body.appendChild(div)
+                save_element(div)
+            }
+            action_printer("Button with id #"+div.id+" has been created.", "action")
+        }
+              
+        </script>   
+
+        <style>
+             ::-webkit-scrollbar {
+                width: 5px;
+              }
+
+             /* Track */
+             ::-webkit-scrollbar-track {
+                background: #f1f1f1; 
+             }
+ 
+            /* Handle */
+            ::-webkit-scrollbar-thumb {
+              background: #888; 
+            }
+
+            /* Handle on hover */
+            ::-webkit-scrollbar-thumb:hover {
+              background: #555; 
+            }
+            .closebutton:hover{color:red}
+            .textproperty:hover{background-color:#ccc}
+            .resizer { width: 10px; height: 10px; background: #FFA5B0; position:absolute; right: 0; bottom: 0; cursor: se-resize; }
+            .fixit {width:20px;height:20px;visibility:hidden;cursor:pointer;font-size:12px;font-family:calibri;position:absolute;right:0;top:0}
+            .rectangle:hover .fixit{visibility: visible;}
+            .navbar:hover .fixit{visibility: visible;}
+            .fixit:hover {border:1px solid orange}
+            #canvas {
+                width:75%;
+                height:99%;
+                left:90px;
+                top:0;
+                position:absolute;
+                border: 0px solid black;
+                z-index: 0;
+                overflow-x: hidden;
+            }
+            #canvas:hover {
+                background-image: url("grid.jpg");
+                background-repeat:repeat;
+            }
+            .rectangle, .circle, .button, .window{
+                border: 0px solid #FF0000;
+                position: absolute;
+            }
+            
+            .textbox {
+                position:absolute;
+                border:0px dotted lightgrey;
+            }
+            #ball {
+                cursor: pointer;
+                width: 40px;
+                height: 40px;
+            }
+            #sidebar {position:fixed;background-color: white;left:5px;top:100px;height:70%;border:2px solid grey}
+            #details {position:fixed;background-color: white;right:1px;top:1px;height:40%;border:2px solid grey;width:18%;}
+            #actions {position:fixed;background-color: white;right:1px;height:99%;top:0px;border:2px solid grey;width:18%;}
+            #actions .heading{background-color:#F7FBE1;padding:5px 10px;border:1px solid grey;font-family:calibri;font-size:14px;font-weight:bold;}
+            #actionbody{border:1px solid transparent;height:92%;overflow-y: scroll;overflow-x: hidden}
+            #actionbody p{font-family:monospace;font-size:12px;font-weight:bold;padding:1px 10px;color:grey}
+            .clearbutton {background-color:#CFE5CF;bottom:0;padding:7px 10px;text-align: center;font-weight: bold;cursor:hand;font-family:monospace;border:1px solid grey}
+            .clearbutton:hover{background-color: #ccc;}
+            #boxes {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color:white;
+            }
+
+            #boxes li a {
+                display: block;
+                color: black;
+                border-bottom:1px solid navy;
+                text-align: center;
+                padding: 10px 20px;
+                text-decoration: none;
+                cursor:pointer;
+            }
+
+            #detailsbox {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                width: 100%;
+            }
+
+            #detailsbox li{
+                display: block;
+                color: black;
+                border-bottom:1px solid navy;
+                text-align: center;
+                padding: 5px 10px;
+                text-decoration: none;
+                background-color:white;
+                cursor:pointer;
+                text-align:left;
+            }
+            #detailsbox li a.heading {
+                font-weight:bold;
+                font-size:13px;
+                color:navy;
+                font-family: calibri;
+                margin-right:10px;
+                padding:2px 3px;
+                text-transform: uppercase;
+            }
+            #detailsbox li a.detail {
+                font-family:monospace;
+                font-size:13px;
+            }
+            #boxes li a:hover{background-color:orange;}
+            #boxes li a img {width:35px;}
+            #box li a:active{background-color: red;}
+            body {background-color: #F7F7EE}
+            .dropdowncontent {
+                display: none;
+                position: absolute;
+                z-index: 30;
+                width:100px;
+                background-color: wheat;
+                font-size:12px;
+                font-weight: bold;
+                font-family:monospace;
+                border:2px solid grey;
+                left:10px;
+            }
+
+            .dropdowncontent a {
+                float: none;
+                color: black;
+                padding: 5px 10px;
+                text-decoration: none;
+                text-align: left;   
+                z-index: 10;             
+            }
+            #boxes li:hover .dropdowncontent {display:block;}
+
+            .navbar {
+                background-color: cadetblue;
+            }
+
+            .navbar a {
+            float: left;
+            font-size: 16px;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            border:1px solid grey;
+            }
+            a {cursor: hand;}
+
+            .dropdown {
+            float: left;
+            overflow: hidden;
+            }
+
+            .dropdown .dropbtn {
+            font-size: 16px;  
+            border: none;
+            outline: none;
+            color: white;
+            padding: 14px 16px;
+            background-color: inherit;
+            font-family: inherit;
+            margin: 0;
+            }
+
+            .navbar a:hover, .dropdown:hover .dropbtn {
+            background-color: red;
+            }
+
+            .dropdown-content {
+            display: block;
+            position: absolute;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            }
+
+            .dropdown-content a {
+            float: none;
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            }
+
+            .dropdown-content a:hover {
+            background-color: #ddd;
+            }
+
+            .dropdown:hover .dropdown-content {
+            display: block;
+            }
+
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 35px;
+                height: 16px;
+            }
+
+            .switch input { 
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ccc;
+                -webkit-transition: .4s;
+                transition: .4s;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 16px;
+                width: 16px;
+                left: 1px;
+                bottom: 0px;
+                background-color: white;
+                -webkit-transition: .4s;
+                transition: .4s;
+            }
+
+            .switch input:checked + .slider {
+                background-color: #2196F3;
+            }
+
+            .switch input:focus + .slider {
+                box-shadow: 0 0 1px #2196F3;
+            }
+
+            .switch input:checked + .slider:before {
+                -webkit-transform: translateX(17px);
+                -ms-transform: translateX(15px);
+                transform: translateX(17px);
+            }
+
+            /* Rounded sliders */
+            .slider.round {
+                border-radius: 34px;
+            }
+
+            .slider.round:before {
+                border-radius: 50%;
+            }
+
+        </style>
+    </head>
+    <body id="main_body">
+        <div id = "sidebar">
+            <ul id="boxes">
+                
+                <li><a onclick="goback()" title="Ctrl+Z"><img src="back.png" ></a></li>
+                <li><a onclick="save_page()" title="Save"><img src="save.png"></a></li>
+                <li><a onclick="preview_page()" title="Preview"><img src="preview.png"></a></li>
+
+                <li>
+                    <a title = "Add html code" onclick="javascript:canvas.contentDocument.getElementById('codepaster').style.visibility = 'visible'"><img src="codesymbol.jpg"></a>
+                </li>
+                <li>
+                    <a title = "Add CSS code" onclick="javascript:canvas.contentDocument.getElementById('csscodepaster').style.visibility = 'visible'">CSS</a>
+                </li>
+                <li>
+                   <a title = "draw div" onclick="initRectangle(this,document.getElementById('canvas'),0);"><img src = "rectangle.png"></a>
+                </li>
+                <li>
+                    <a title="button widget" onclick="create_button()" style="font-family:calibri;font-weight:bold;font-size:12px">BUTTON</a>
+                </li>
+                 <li>
+                    <a title = "color picker" onclick="initColorPicker(this)"><img src = "colorpicker.jpg"></a>
+                 </li>
+            </ul>
+        </div>
+
+
+        <div id="actions">
+            <div class="heading">Actions</div>
+
+            <div id="actionbody">
+            </div>
+
+            <div class="clearbutton" onclick="javascript:actionbody.innerHTML = ''">Clear</div>
+
+        </div>
+
+        <iframe id="canvas" seamless></iframe>
+        <script>
+                move_element()
+        </script>
+    </body>
+</html>
